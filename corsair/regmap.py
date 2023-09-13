@@ -17,6 +17,10 @@ class RegisterMap():
     """CSR map"""
 
     def __init__(self):
+        self._offset = 0
+        self._name = 'undefined'
+        self._description = 'none'
+        self._group = 'default'
         self._regs = []
 
     def __eq__(self, other):
@@ -42,7 +46,9 @@ class RegisterMap():
         inner_indent = indent + '  '
         regs = [reg.as_str(inner_indent) for reg in self.regs]
         regs_str = '\n'.join(regs) if regs else inner_indent + 'empty'
-        return indent + 'register map:\n' + regs_str
+        return indent + 'register map:\n' + \
+                inner_indent + 'name: ' + self._name + ' (' + self._description + ')\n' + \
+                inner_indent + 'offset: ' + str(self._offset) + '\n' + regs_str
 
     def as_dict(self):
         """Return register map as a dictionary."""
@@ -213,8 +219,12 @@ class RegisterMap():
 
     def _fill_from_file_data(self, data):
         """Fill register map with data from file."""
+        self._offset = data['offset']
+        self._name = data['name']
+        self._description = data['description']
+        self._group = data['group']
         self._regs = []
-        for data_reg in data:
+        for data_reg in data['map']:
             data_reg_filtered = {k: v for k, v in data_reg.items() if k != 'bitfields'}
             reg = Register(**data_reg_filtered)
             for data_bf in data_reg['bitfields']:
@@ -225,3 +235,11 @@ class RegisterMap():
                         bf.add_enums(EnumValue(**data_enum))
                 reg.add_bitfields(bf)
             self.add_registers(reg)
+
+        self._update_id_register()
+
+    def _update_id_register(self):
+        for reg in self._regs:
+            if reg.name == 'ID':
+                pass    # TODO
+            
