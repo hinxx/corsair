@@ -21,15 +21,27 @@ class RegisterMap():
                  offset=0, group='default', instance=1, **args):
         self._regs = []
 
-        self._name = name
-        self._offset = offset
-        self._description = description
-        self._function = function
-        self._group = group
-        self._instance = instance
+        self.name = name
+        self.offset = offset
+        self.description = description
+        # self._function = function
+        # self._group = group
+        # self._instance = instance
         self._etc = args
 
-        # self.instance = instance
+        id_reg = Register('ID', 'ID register', 0x0).add_bitfields([
+            BitField('IDX', 'Instance', width=8, lsb=0, access='ro', hardware='f'),
+            BitField('GID', 'Group ID', width=8, lsb=8, access='ro', hardware='f'),
+            BitField('FID', 'Function ID', width=16, lsb=16, access='ro', hardware='f')])
+        version_reg = Register('VER', 'Version register', 0x4).add_bitfields([
+            BitField('PATCH', 'Patch', width=8, lsb=0, access='ro', hardware='f'),
+            BitField('MINOR', 'Minor', width=16, lsb=8, access='ro', hardware='f'),
+            BitField('MAJOR', 'Major', width=8, lsb=24, access='ro', hardware='f')])
+        self.add_registers([id_reg, version_reg])
+
+        self.function = function
+        self.instance = instance
+        self.group = group
 
 
     def __eq__(self, other):
