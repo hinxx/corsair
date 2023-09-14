@@ -3,7 +3,7 @@ regmap:
     description: Raw channel
     offset: 0
     group: default
-    map:
+    registers:
     -   name: DATA
         description: Data register
         address: 4

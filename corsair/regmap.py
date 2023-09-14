@@ -6,6 +6,7 @@
 
 from . import utils
 from . import config
+from . import id
 from .reg import Register
 from .bitfield import BitField
 from .enum import EnumValue
@@ -16,12 +17,20 @@ import yaml
 class RegisterMap():
     """CSR map"""
 
-    def __init__(self):
-        self._offset = 0
-        self._name = 'undefined'
-        self._description = 'none'
-        self._group = 'default'
+    def __init__(self, name='regmap0', description='Register map 0', function='Function 0',
+                 offset=0, group='default', instance=1, **args):
         self._regs = []
+
+        self._name = name
+        self._offset = offset
+        self._description = description
+        self._function = function
+        self._group = group
+        self._instance = instance
+        self._etc = args
+
+        # self.instance = instance
+
 
     def __eq__(self, other):
         if self.__class__ != other.__class__:
@@ -45,10 +54,10 @@ class RegisterMap():
         """Create indented string with the information about register map."""
         inner_indent = indent + '  '
         regs = [reg.as_str(inner_indent) for reg in self.regs]
-        regs_str = '\n'.join(regs) if regs else inner_indent + 'empty'
+        regs_str = '\n'.join(regs) if regs else 2*inner_indent + 'empty'
         return indent + 'register map:\n' + \
                 inner_indent + 'name: ' + self._name + ' (' + self._description + ')\n' + \
-                inner_indent + 'offset: ' + str(self._offset) + '\n' + regs_str
+                inner_indent + 'offset: ' + str('0x%x' % self._offset) + '\n' + regs_str
 
     def as_dict(self):
         """Return register map as a dictionary."""
@@ -123,7 +132,7 @@ class RegisterMap():
         """List with register objects."""
         return self._regs
 
-    def add_registers(self, new_regs):
+    def add_registers(self, new_regs, update_id=False):
         """Add list of registers.
 
         Register are automatically sorted and stored in the ascending order of addresses.
@@ -133,24 +142,32 @@ class RegisterMap():
 
         # add registers to the list one by one
         for reg in new_regs:
-            # check existance
+            # check for duplicates
             assert reg.name not in self.reg_names, \
                 "Register with name '%s' is already present!" % (reg.name)
-            # aplly calculated address if register address is empty
+            # apply calculated address if register address is empty
             if reg.address is None:
                 self._addr_resolve(reg)
             # check address alignment
             self._addr_check_alignment(reg)
             # check address conflicts
             self._addr_check_conflicts(reg)
-            # if we here - all is ok and register can be added
+            # if we are here all is ok and register can be added
             try:
                 # find position to insert register and not to break ascending order of addresses
                 reg_idx = next(i for i, r in enumerate(self._regs) if r.address > reg.address)
                 self._regs.insert(reg_idx, reg)
             except StopIteration:
-                # when registers list is empty or all addresses are less than the current one
+                # when register list is empty or all addresses are smaller than the current one
                 self._regs.append(reg)
+        
+        # XXX: this looks UGLY .. reassigning the class value to attribute just to
+        #      trigger the ID register field upates here ; improve!
+        if update_id:
+            self.instance = self._instance
+            self.group = self._group
+            self.function = self._function
+
         return self
 
     def validate(self):
@@ -219,12 +236,8 @@ class RegisterMap():
 
     def _fill_from_file_data(self, data):
         """Fill register map with data from file."""
-        self._offset = data['offset']
-        self._name = data['name']
-        self._description = data['description']
-        self._group = data['group']
         self._regs = []
-        for data_reg in data['map']:
+        for data_reg in data['registers']:
             data_reg_filtered = {k: v for k, v in data_reg.items() if k != 'bitfields'}
             reg = Register(**data_reg_filtered)
             for data_bf in data_reg['bitfields']:
@@ -236,10 +249,76 @@ class RegisterMap():
                 reg.add_bitfields(bf)
             self.add_registers(reg)
 
-        self._update_id_register()
+        # set register map attributes
+        self.name = data['name']
+        self.description = data['description']
+        self.function = data['function']
+        self.group = data['group']
+        self.instance = data['instance']
+        self.offset = data['offset']
 
-    def _update_id_register(self):
-        for reg in self._regs:
-            if reg.name == 'ID':
-                pass    # TODO
-            
+    @property
+    def offset(self):
+        return self._offset
+
+    @offset.setter
+    def offset(self, value):
+        if not utils.is_non_neg_int(value):
+            raise ValueError("Regmap: 'offset' attribute has to a positive integer")
+        self._offset = value
+
+    @property
+    def name(self):
+        return self._name
+    
+    @name.setter
+    def name(self, value):
+        if not utils.is_str(value):
+            raise ValueError("Regmap: 'name' attribute has to be a string")
+        self._name = value
+
+    @property
+    def description(self):
+        return self._description
+
+    @description.setter
+    def description(self, value):
+        if not utils.is_str(value):
+            raise ValueError("Regmap: 'description' attribute has to be a string")
+        self._description = value
+
+    @property
+    def group(self):
+        return self._group
+
+    @group.setter
+    def group(self, value):
+        if not utils.is_str(value):
+            raise ValueError("Regmap: 'group' attribute has to be a string")
+        self._group = value
+        # update ID register group field
+        self['ID']['GID'].reset = id.group_id(value)
+
+    @property
+    def function(self):
+        return self._function
+
+    @function.setter
+    def function(self, value):
+        if not utils.is_str(value):
+            raise ValueError("Regmap: 'function' attribute has to be a string")
+        self._function = value
+        # update ID register function field
+        self['ID']['FID'].reset = id.function_id(value)
+
+    @property
+    def instance(self):
+        return self._instance
+
+    @instance.setter
+    def instance(self, value):
+        if not utils.is_pos_int(value):
+            raise ValueError("Regmap: 'instance' attribute has to be a positive integer greater than 0")
+        self._instance = value
+        # update ID register instance field
+        self['ID']['IDX'].reset = value

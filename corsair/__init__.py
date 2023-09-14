@@ -18,4 +18,5 @@ from .enum import EnumValue
 from .bitfield import BitField
 from .reg import Register
 from .regmap import RegisterMap
+from .top import TopLevel
 from . import generators

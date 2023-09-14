@@ -1,0 +1,36 @@
+regmap:
+    name: No name
+    description: No description
+    function: Example function 76
+    offset: 0x0
+    group: undefined
+    instance: 1
+    registers:
+    -   name: ID
+        description: IP-core ID register
+        address: 0x0
+        bitfields:
+        -   name: IDX
+            description: Instance index
+            reset: 0
+            width: 8
+            lsb: 0
+            access: ro
+            hardware: f
+            enums: []
+        -   name: GID
+            description: Group ID
+            reset: 0
+            width: 8
+            lsb: 8
+            access: ro
+            hardware: f
+            enums: []
+        -   name: FID
+            description: Function ID
+            reset: 0
+            width: 16
+            lsb: 16
+            access: ro
+            hardware: f
+            enums: []

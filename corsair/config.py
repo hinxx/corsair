@@ -18,6 +18,7 @@ def default_globcfg():
         "address_increment": "none",
         "address_alignment": "data_width",
         "force_name_case": "none",
+        "offset_alignment": "none"
     }
 
 
@@ -40,6 +41,10 @@ def read_csrconfig(cfgpath):
             pass
         try:
             globcfg["address_alignment"] = utils.str2int(globcfg["address_alignment"])
+        except ValueError:
+            pass
+        try:
+            globcfg["offset_alignment"] = utils.str2int(globcfg["offset_alignment"])
         except ValueError:
             pass
         validate_globcfg(globcfg)
@@ -103,6 +108,17 @@ def validate_globcfg(globcfg):
     assert is_valid, \
         "Wrong value for 'address_alignment'='%s'. Must be one of this: %s or a non negative integer." % (
             globcfg["address_alignment"], address_alignment_alowed)
+
+    # offset_alignment
+    offset_alignment_alowed = ['none']
+    try:
+        is_valid = (globcfg["offset_alignment"] in offset_alignment_alowed or
+                    utils.is_non_neg_int(globcfg["offset_alignment"]))
+    except ValueError:
+        is_valid = False
+    assert is_valid, \
+        "Wrong value for 'offset_alignment'='%s'. Must be one of this: %s or a non negative integer." % (
+            globcfg["offset_alignment"], offset_alignment_alowed)
 
     # force_name_case
     force_name_case_allowed = ['lower', 'upper', 'none']

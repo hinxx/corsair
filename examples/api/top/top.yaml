@@ -1,0 +1,28 @@
+top:
+    name: Example application
+    regmaps:
+    -   name: Instance 1 in group 1
+        description: Just a long description of the this register map..
+        include: regs.yaml
+        instance: 5
+        offset: 0x401000
+        group: example-group-11
+    -   name: Instance 2 in first group
+        description: Another long description
+        include: regs.yaml
+        instance: 6
+        offset: 0x402000
+        group: example-group-11
+
+    -   name: Instance 1 in group 2
+        description: Some text goes here to describe the register map
+        include: regs.yaml
+        instance: 7
+        offset: 0x40A000
+        group: Example group 22
+    -   name: Instance 2 in second group
+        description: What should I say here ??!
+        include: regs.yaml
+        instance: 8
+        offset: 0x40B000
+        group: Example group 22
